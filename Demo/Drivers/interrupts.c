@@ -83,7 +83,7 @@ void irqHandler() {
 	}
 
 	if(tmp & 0x200) {
-		ulMaskedStatus + pRegs->Pending2;		
+		ulMaskedStatus = pRegs->Pending2;
 		irqNumber = 32 + 31;
 		// Don't clear the interrupts in the basic pending, simply allow them to processed here!
 		if(ulMaskedStatus) {

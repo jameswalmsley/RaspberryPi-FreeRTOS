@@ -45,78 +45,55 @@ static void irqDisable() {
      asm ("clz\t%0, %1": "=r" (__value): "r" (__arg)); \
      __value; })
 
-
 /**
- *	This is the global IRQ handler  on this platform!
+ *	This is the global IRQ handler on this platform!
  *	It is based on the assembler code found in the Broadcom datasheet.
- *
+ * 
  **/
-void irqHandler() {	
-
-	/**
-	 *	WARNING:
-	 *		Compiler optimisations will likely prevent this code from working!
-	 *		
-	 *	This will be fixed later!
-	 **/
-
+void irqHandler()
+{
 	register unsigned long ulMaskedStatus;
 	register unsigned long irqNumber;
-	register unsigned long tmp;
 
 	ulMaskedStatus = pRegs->IRQBasic;
-	tmp = ulMaskedStatus & 0x00000300;			// Check if anything pending in pr1/pr2.   
 
-	if(ulMaskedStatus & ~0xFFFFF300) {			// Note how we mask out the GPU interrupt Aliases.
-		irqNumber = 64 + 31;						// Shifting the basic ARM IRQs to be IRQ# 64 +
-		goto emit_interrupt;
+	/* Bits 7 through 0 in IRQBasic represent interrupts 64-71 */
+	if (ulMaskedStatus & 0xFF) {
+		irqNumber=64 + 31;
 	}
 
-	if(tmp & 0x100) {
+	/* Bit 8 in IRQBasic indicates interrupts in Pending1 (interrupts 31-0) */
+	else if(ulMaskedStatus & 0x100) {
 		ulMaskedStatus = pRegs->Pending1;
 		irqNumber = 0 + 31;
-		// Clear the interrupts also available in basic IRQ pending reg.
-		//ulMaskedStatus &= ~((1 << 7) | (1 << 9) | (1 << 10) | (1 << 18) | (1 << 19));
-		if(ulMaskedStatus) {
-			goto emit_interrupt;
-		}
 	}
 
-	if(tmp & 0x200) {
+	/* Bit 9 in IRQBasic indicates interrupts in Pending2 (interrupts 63-32) */
+	else if(ulMaskedStatus & 0x200) {
 		ulMaskedStatus = pRegs->Pending2;
 		irqNumber = 32 + 31;
-		// Don't clear the interrupts in the basic pending, simply allow them to processed here!
-		if(ulMaskedStatus) {
-			goto emit_interrupt;
-		}				
 	}
 
-	return;
-
-emit_interrupt:
-
-	tmp = ulMaskedStatus - 1;
-	ulMaskedStatus = ulMaskedStatus ^ tmp;
-
-	unsigned long lz = clz(ulMaskedStatus);
-
-	//irqNumber = irqNumber - 
-
-	//__asm volatile("clz	r7,r5");				// r5 is the ulMaskedStatus register. Leaving result in r6!
-	//__asm volatile("sub r6,r7");
-
-	if(g_VectorTable[irqNumber-lz].pfnHandler) {
-		g_VectorTable[irqNumber-lz].pfnHandler(irqNumber, g_VectorTable[irqNumber].pParam);
+	else {
+		// No interrupt avaialbe (Wat)
+		return;
 	}
+
+	/* Keep only least significant bit, in case multiple interrupts have occured */
+	ulMaskedStatus&=-ulMaskedStatus;
+	/* Some magic to determine number of interrupt to serve */
+	irqNumber=irqNumber-clz(ulMaskedStatus);
+	/* Call interrupt handler */
+	g_VectorTable[irqNumber].pfnHandler(irqNumber, g_VectorTable[irqNumber].pParam);
 }
 
 
 static void stubHandler(int nIRQ, void *pParam) {
 	/**
 	 *	Actually if we get here, we should probably disable the IRQ,
-	 *	otherwise we could lock up this system, as there is nothing to 
+	 *	otherwise we could lock up this system, as there is nothing to
 	 *	ackknowledge the interrupt.
-	 **/   
+	 **/
 }
 
 int InitInterruptController() {
@@ -131,7 +108,6 @@ int InitInterruptController() {
 
 
 int RegisterInterrupt(int nIRQ, FN_INTERRUPT_HANDLER pfnHandler, void *pParam) {
-
 	irqDisable();
 	{
 		g_VectorTable[nIRQ].pfnHandler = pfnHandler;
@@ -142,28 +118,35 @@ int RegisterInterrupt(int nIRQ, FN_INTERRUPT_HANDLER pfnHandler, void *pParam) {
 }
 
 int EnableInterrupt(int nIRQ) {
+	/* Datasheet says "All other bits are unaffected", and I'm counting on that. */
+	unsigned int mask=1<<(nIRQ%32);
 
-	unsigned long	ulTMP;
-
-	ulTMP = pRegs->EnableBasic;
-
+	if(nIRQ >=0 && nIRQ <=31) {
+		pRegs->Enable1 = mask;
+	} else
+	if(nIRQ >=32 && nIRQ <=63){
+		pRegs->Enable2 = mask;
+	} else
 	if(nIRQ >= 64 && nIRQ <= 72) {	// Basic IRQ enables
-		pRegs->EnableBasic = 1 << (nIRQ - 64);
+		pRegs->EnableBasic = mask;
 	}
-
-	ulTMP = pRegs->EnableBasic;
-
-	// Otherwise its a GPU interrupt, and we're not supporting those...yet!
 
 	return 0;
 }
 
 int DisableInterrupt(int nIRQ) {
-	if(nIRQ >= 64 && nIRQ <= 72) {
-		pRegs->DisableBasic = 1 << (nIRQ - 64);
-	}
+	/* Datasheet says "All other bits are unaffected", and I'm counting on that. */
+	unsigned int mask=1<<(nIRQ%32);
 
-	// I'm currently only supporting the basic IRQs.
+	if(nIRQ >=0 && nIRQ <=31) {
+		pRegs->Disable1 = mask;
+	} else
+	if(nIRQ >=32 && nIRQ <=63){
+		pRegs->Disable2 = mask;
+	} else
+	if(nIRQ >= 64 && nIRQ <= 72) {
+		pRegs->DisableBasic = mask;
+	}
 
 	return 0;
 }

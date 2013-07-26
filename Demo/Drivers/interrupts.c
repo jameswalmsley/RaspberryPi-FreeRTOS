@@ -48,10 +48,9 @@ static void irqDisable() {
 /**
  *	This is the global IRQ handler on this platform!
  *	It is based on the assembler code found in the Broadcom datasheet.
- * 
+ *
  **/
-void irqHandler()
-{
+void irqHandler() {
 	register unsigned long ulMaskedStatus;
 	register unsigned long irqNumber;
 
@@ -75,7 +74,7 @@ void irqHandler()
 	}
 
 	else {
-		// No interrupt avaialbe (Wat)
+		// No interrupt avaialbe, so just return.
 		return;
 	}
 

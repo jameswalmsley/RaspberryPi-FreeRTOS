@@ -107,6 +107,9 @@ int InitInterruptController() {
 
 
 int RegisterInterrupt(int nIRQ, FN_INTERRUPT_HANDLER pfnHandler, void *pParam) {
+	if(nIRQ<0 || nIRQ>71)
+		return -1;
+
 	irqDisable();
 	{
 		g_VectorTable[nIRQ].pfnHandler = pfnHandler;
@@ -126,9 +129,10 @@ int EnableInterrupt(int nIRQ) {
 	if(nIRQ >=32 && nIRQ <=63){
 		pRegs->Enable2 = mask;
 	} else
-	if(nIRQ >= 64 && nIRQ <= 72) {	// Basic IRQ enables
+	if(nIRQ >= 64 && nIRQ <= 71) {	// Basic IRQ enables
 		pRegs->EnableBasic = mask;
-	}
+	} else
+		return -1;
 
 	return 0;
 }
@@ -143,9 +147,10 @@ int DisableInterrupt(int nIRQ) {
 	if(nIRQ >=32 && nIRQ <=63){
 		pRegs->Disable2 = mask;
 	} else
-	if(nIRQ >= 64 && nIRQ <= 72) {
+	if(nIRQ >= 64 && nIRQ <= 71) {
 		pRegs->DisableBasic = mask;
-	}
+	} else
+		return -1;
 
 	return 0;
 }

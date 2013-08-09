@@ -14,8 +14,8 @@ modify the TOOLCHAIN variable in dbuild.config.mk file.
 
 You may also need to modify the library locations in the Makefile:
 
-kernel.elf: LDFLAGS += -L"c:/yagarto/lib/gcc/arm-none-eabi/4.7.1/" -lgcc
-kernel.elf: LDFLAGS += -L"c:/yagarto/arm-none-eabi/lib/" -lc
+    kernel.elf: LDFLAGS += -L"c:/yagarto/lib/gcc/arm-none-eabi/4.7.1/" -lgcc
+    kernel.elf: LDFLAGS += -L"c:/yagarto/arm-none-eabi/lib/" -lc
 
 The build system also expects find your python interpreter by using /usr/bin/env python,
 if this doesn't work you will get problems.

@@ -37,14 +37,12 @@ void SetGpio			(unsigned int pinNum, unsigned int pinVal);
 /* Read GPIO pin level */
 int ReadGpio			(unsigned int pinNum);
 
-/* GPIO pull up/down resistor control function */
+/* GPIO pull up/down resistor control function (NOT YET IMPLEMENTED) */
 int PudGpio				(unsigned int pinNum, enum PULL_STATE state);
 
 /* Interrupt related functions */
 void EnableGpioDetect	(unsigned int pinNum, enum DETECT_TYPE type);
 void DisableGpioDetect	(unsigned int pinNum, enum DETECT_TYPE type);
 void ClearGpioInterrupt	(unsigned int pinNum);
-
-
 
 #endif

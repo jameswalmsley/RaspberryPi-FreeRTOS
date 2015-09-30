@@ -28,16 +28,11 @@ static volatile BCM2835_INTC_REGS * const pRegs = (BCM2835_INTC_REGS *) (BCM2835
  *	Enables all IRQ's in the CPU's CPSR register.
  **/
 static void irqEnable() {
-	__asm volatile("mrs 	r0,cpsr");		// Read in the cpsr register.
-	__asm volatile("bic		r0,r0,#0x80");	// Clear bit 8, (0x80) -- Causes IRQs to be enabled.
-	__asm volatile("msr		cpsr_c, r0");	// Write it back to the CPSR register
+	__asm volatile("cpsie i" : : : "memory");
 }
 
 static void irqDisable() {
-	__asm volatile("mrs		r0,cpsr");		// Read in the cpsr register.
-	__asm volatile("orr		r0,r0,#0x80");	// Set bit 8, (0x80) -- Causes IRQs to be disabled.
-	__asm volatile("msr		cpsr_c, r0");	// Write it back to the CPSR register.
-
+	__asm volatile("cpsid i" : : : "memory");
 }
 
 #define clz(a) \

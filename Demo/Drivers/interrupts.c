@@ -35,52 +35,45 @@ static void irqDisable() {
 	__asm volatile("cpsid i" : : : "memory");
 }
 
-#define clz(a) \
- ({ unsigned long __value, __arg = (a); \
-     asm ("clz\t%0, %1": "=r" (__value): "r" (__arg)); \
-     __value; })
+static void handleRange (unsigned long pending, const unsigned int base)
+{
+	do {
+		// Get index of first set bit:
+		unsigned int bit = 31 - __builtin_clz(pending);
+
+		// Map to IRQ number:
+		unsigned int irq = base + bit;
+
+		// Call interrupt handler:
+		g_VectorTable[irq].pfnHandler(irq, g_VectorTable[irq].pParam);
+
+		// Clear bit in bitfield:
+		pending &= ~(1UL << bit);
+	}
+	while (pending);
+}
 
 /**
  *	This is the global IRQ handler on this platform!
  *	It is based on the assembler code found in the Broadcom datasheet.
  *
  **/
-void irqHandler() {
-	register unsigned long ulMaskedStatus;
-	register unsigned long irqNumber;
-
-	ulMaskedStatus = pRegs->IRQBasic;
+void irqHandler (void)
+{
+	register unsigned long ulMaskedStatus = pRegs->IRQBasic;
 
 	/* Bits 7 through 0 in IRQBasic represent interrupts 64-71 */
-	if (ulMaskedStatus & 0xFF) {
-		irqNumber=64 + 31;
-	}
+	if (ulMaskedStatus & 0xFF)
+		handleRange(ulMaskedStatus & 0xFF, 64);
 
 	/* Bit 8 in IRQBasic indicates interrupts in Pending1 (interrupts 31-0) */
-	else if(ulMaskedStatus & 0x100) {
-		ulMaskedStatus = pRegs->Pending1;
-		irqNumber = 0 + 31;
-	}
+	if (ulMaskedStatus & (1UL << 8))
+		handleRange(pRegs->Pending1, 0);
 
 	/* Bit 9 in IRQBasic indicates interrupts in Pending2 (interrupts 63-32) */
-	else if(ulMaskedStatus & 0x200) {
-		ulMaskedStatus = pRegs->Pending2;
-		irqNumber = 32 + 31;
-	}
-
-	else {
-		// No interrupt avaialbe, so just return.
-		return;
-	}
-
-	/* Keep only least significant bit, in case multiple interrupts have occured */
-	ulMaskedStatus&=-ulMaskedStatus;
-	/* Some magic to determine number of interrupt to serve */
-	irqNumber=irqNumber-clz(ulMaskedStatus);
-	/* Call interrupt handler */
-	g_VectorTable[irqNumber].pfnHandler(irqNumber, g_VectorTable[irqNumber].pParam);
+	if (ulMaskedStatus & (1UL << 9))
+		handleRange(pRegs->Pending2, 32);
 }
-
 
 static void stubHandler(int nIRQ, void *pParam) {
 	/**

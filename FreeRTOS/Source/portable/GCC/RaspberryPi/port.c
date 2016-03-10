@@ -153,7 +153,7 @@ void vPortEndScheduler( void )
  *
  *	See bt_interrupts.c in the RaspberryPi Drivers folder.
  */
-void vTickISR(int nIRQ, void *pParam )
+void vTickISR (unsigned int nIRQ, void *pParam)
 {
 	vTaskIncrementTick();
 

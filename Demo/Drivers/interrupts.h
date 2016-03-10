@@ -8,7 +8,7 @@
 #ifndef _INTERRUPTS_H_
 #define _INTERRUPTS_H_
 
-typedef void (*FN_INTERRUPT_HANDLER)(int nIRQ, void *pParam);
+typedef void (*FN_INTERRUPT_HANDLER) (unsigned int irq, void *pParam);
 
 typedef struct {
 	FN_INTERRUPT_HANDLER 	pfnHandler;			///< Function that handles this IRQn
@@ -16,10 +16,10 @@ typedef struct {
 } INTERRUPT_VECTOR;
 
 int InitInterruptController	();
-int RegisterInterrupt		(int nIRQ, FN_INTERRUPT_HANDLER pfnHandler, void *pParam);
-int EnableInterrupt			(int nIRQ);
-int DisableInterrupt		(int nIRQ);
-int EnableInterrupts		();
-int DisableInterrupts		();
+int RegisterInterrupt		(const unsigned int irq, FN_INTERRUPT_HANDLER pfnHandler, void *pParam);
+int EnableInterrupt			(const unsigned int irq);
+int DisableInterrupt		(const unsigned int irq);
+int EnableInterrupts		(void);
+int DisableInterrupts		(void);
 
 #endif

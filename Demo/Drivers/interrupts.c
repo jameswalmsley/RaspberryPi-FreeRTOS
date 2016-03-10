@@ -78,7 +78,8 @@ void irqHandler (void)
 		handleRange(ulMaskedStatus & 0xFF & enabled[2], 64);
 }
 
-static void stubHandler(int nIRQ, void *pParam) {
+static void stubHandler (const unsigned int irq, void *pParam)
+{
 	/**
 	 *	Actually if we get here, we should probably disable the IRQ,
 	 *	otherwise we could lock up this system, as there is nothing to
@@ -97,57 +98,62 @@ int InitInterruptController() {
 
 
 
-int RegisterInterrupt(int nIRQ, FN_INTERRUPT_HANDLER pfnHandler, void *pParam) {
-	if(nIRQ<0 || nIRQ>71)
+int RegisterInterrupt (const unsigned int irq, FN_INTERRUPT_HANDLER pfnHandler, void *pParam)
+{
+	if (irq >= BCM2835_INTC_TOTAL_IRQ)
 		return -1;
 
 	irqDisable();
 	{
-		g_VectorTable[nIRQ].pfnHandler = pfnHandler;
-		g_VectorTable[nIRQ].pParam		= pParam;
+		g_VectorTable[irq].pfnHandler = pfnHandler;
+		g_VectorTable[irq].pParam     = pParam;
 	}
 	irqEnable();
 	return 0;
 }
 
-int EnableInterrupt(int nIRQ) {
-	/* Datasheet says "All other bits are unaffected", and I'm counting on that. */
-	unsigned int mask=1<<(nIRQ%32);
+int EnableInterrupt (const unsigned int irq)
+{
+	unsigned long mask = 1UL << (irq % 32);
 
-	if(nIRQ >=0 && nIRQ <=31) {
+	if (irq <= 31) {
 		pRegs->Enable1 = mask;
 		enabled[0] |= mask;
-	} else
-	if(nIRQ >=32 && nIRQ <=63){
+	}
+	else if (irq <= 63) {
 		pRegs->Enable2 = mask;
 		enabled[1] |= mask;
-	} else
-	if(nIRQ >= 64 && nIRQ <= 71) {	// Basic IRQ enables
+	}
+	else if (irq < BCM2835_INTC_TOTAL_IRQ) {
 		pRegs->EnableBasic = mask;
 		enabled[2] |= mask;
-	} else
+	}
+	else {
 		return -1;
+	}
 
 	return 0;
 }
 
-int DisableInterrupt(int nIRQ) {
-	/* Datasheet says "All other bits are unaffected", and I'm counting on that. */
-	unsigned int mask=1<<(nIRQ%32);
+int DisableInterrupt (const unsigned int irq)
+{
+	unsigned long mask = 1UL << (irq % 32);
 
-	if(nIRQ >=0 && nIRQ <=31) {
+	if (irq <= 31) {
 		pRegs->Disable1 = mask;
 		enabled[0] &= ~mask;
-	} else
-	if(nIRQ >=32 && nIRQ <=63){
+	}
+	else if (irq <= 63) {
 		pRegs->Disable2 = mask;
 		enabled[1] &= ~mask;
-	} else
-	if(nIRQ >= 64 && nIRQ <= 71) {
+	}
+	else if (irq < BCM2835_INTC_TOTAL_IRQ) {
 		pRegs->DisableBasic = mask;
 		enabled[2] &= ~mask;
-	} else
+	}
+	else {
 		return -1;
+	}
 
 	return 0;
 }

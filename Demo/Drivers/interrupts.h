@@ -15,7 +15,6 @@ typedef struct {
 	void 				   *pParam;				///< A special parameter that the use can pass to the IRQ.
 } INTERRUPT_VECTOR;
 
-int InitInterruptController	();
 int RegisterInterrupt		(const unsigned int irq, FN_INTERRUPT_HANDLER pfnHandler, void *pParam);
 int EnableInterrupt			(const unsigned int irq);
 int DisableInterrupt		(const unsigned int irq);

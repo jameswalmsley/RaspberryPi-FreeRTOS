@@ -48,8 +48,9 @@ static void handleRange (unsigned long pending, const unsigned int base)
 		// Map to IRQ number:
 		unsigned int irq = base + bit;
 
-		// Call interrupt handler:
-		g_VectorTable[irq].pfnHandler(irq, g_VectorTable[irq].pParam);
+		// Call interrupt handler, if enabled:
+		if (g_VectorTable[irq].pfnHandler)
+			g_VectorTable[irq].pfnHandler(irq, g_VectorTable[irq].pParam);
 
 		// Clear bit in bitfield:
 		pending &= ~(1UL << bit);
@@ -77,26 +78,6 @@ void irqHandler (void)
 	if (ulMaskedStatus & 0xFF)
 		handleRange(ulMaskedStatus & 0xFF & enabled[2], 64);
 }
-
-static void stubHandler (const unsigned int irq, void *pParam)
-{
-	/**
-	 *	Actually if we get here, we should probably disable the IRQ,
-	 *	otherwise we could lock up this system, as there is nothing to
-	 *	ackknowledge the interrupt.
-	 **/
-}
-
-int InitInterruptController() {
-	int i;
-	for(i = 0; i < BCM2835_INTC_TOTAL_IRQ; i++) {
-		g_VectorTable[i].pfnHandler 	= stubHandler;
-		g_VectorTable[i].pParam			= (void *) 0;
-	}
-	return 0;
-}
-
-
 
 int RegisterInterrupt (const unsigned int irq, FN_INTERRUPT_HANDLER pfnHandler, void *pParam)
 {

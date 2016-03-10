@@ -32,11 +32,8 @@ void task2(void *pParam) {
  *	-- Absolutely nothing wrong with this being called main(), just it doesn't have
  *	-- the same prototype as you'd see in a linux program.
  **/
-void main(void) {
-
-	DisableInterrupts();
-	InitInterruptController();
-
+void main (void)
+{
 	SetGpioFunction(16, 1);			// RDY led
 
 	xTaskCreate(task1, "LED_0", 128, NULL, 0, NULL);

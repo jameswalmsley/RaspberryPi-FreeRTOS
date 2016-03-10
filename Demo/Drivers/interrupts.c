@@ -24,6 +24,9 @@ typedef struct {
 
 static volatile BCM2835_INTC_REGS * const pRegs = (BCM2835_INTC_REGS *) (BCM2835_BASE_INTC);
 
+// Remember which interrupts have been enabled:
+static unsigned long enabled[3];
+
 /**
  *	Enables all IRQ's in the CPU's CPSR register.
  **/
@@ -37,7 +40,8 @@ static void irqDisable() {
 
 static void handleRange (unsigned long pending, const unsigned int base)
 {
-	do {
+	while (pending)
+	{
 		// Get index of first set bit:
 		unsigned int bit = 31 - __builtin_clz(pending);
 
@@ -50,7 +54,6 @@ static void handleRange (unsigned long pending, const unsigned int base)
 		// Clear bit in bitfield:
 		pending &= ~(1UL << bit);
 	}
-	while (pending);
 }
 
 /**
@@ -62,17 +65,17 @@ void irqHandler (void)
 {
 	register unsigned long ulMaskedStatus = pRegs->IRQBasic;
 
-	/* Bits 7 through 0 in IRQBasic represent interrupts 64-71 */
-	if (ulMaskedStatus & 0xFF)
-		handleRange(ulMaskedStatus & 0xFF, 64);
-
-	/* Bit 8 in IRQBasic indicates interrupts in Pending1 (interrupts 31-0) */
+	// Bit 8 in IRQBasic indicates interrupts in Pending1 (interrupts 31-0):
 	if (ulMaskedStatus & (1UL << 8))
-		handleRange(pRegs->Pending1, 0);
+		handleRange(pRegs->Pending1 & enabled[0], 0);
 
-	/* Bit 9 in IRQBasic indicates interrupts in Pending2 (interrupts 63-32) */
+	// Bit 9 in IRQBasic indicates interrupts in Pending2 (interrupts 63-32):
 	if (ulMaskedStatus & (1UL << 9))
-		handleRange(pRegs->Pending2, 32);
+		handleRange(pRegs->Pending2 & enabled[1], 32);
+
+	// Bits 7 through 0 in IRQBasic represent interrupts 64-71:
+	if (ulMaskedStatus & 0xFF)
+		handleRange(ulMaskedStatus & 0xFF & enabled[2], 64);
 }
 
 static void stubHandler(int nIRQ, void *pParam) {
@@ -113,12 +116,15 @@ int EnableInterrupt(int nIRQ) {
 
 	if(nIRQ >=0 && nIRQ <=31) {
 		pRegs->Enable1 = mask;
+		enabled[0] |= mask;
 	} else
 	if(nIRQ >=32 && nIRQ <=63){
 		pRegs->Enable2 = mask;
+		enabled[1] |= mask;
 	} else
 	if(nIRQ >= 64 && nIRQ <= 71) {	// Basic IRQ enables
 		pRegs->EnableBasic = mask;
+		enabled[2] |= mask;
 	} else
 		return -1;
 
@@ -131,12 +137,15 @@ int DisableInterrupt(int nIRQ) {
 
 	if(nIRQ >=0 && nIRQ <=31) {
 		pRegs->Disable1 = mask;
+		enabled[0] &= ~mask;
 	} else
 	if(nIRQ >=32 && nIRQ <=63){
 		pRegs->Disable2 = mask;
+		enabled[1] &= ~mask;
 	} else
 	if(nIRQ >= 64 && nIRQ <= 71) {
 		pRegs->DisableBasic = mask;
+		enabled[2] &= ~mask;
 	} else
 		return -1;
 

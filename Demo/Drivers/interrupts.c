@@ -27,17 +27,6 @@ static volatile BCM2835_INTC_REGS * const pRegs = (BCM2835_INTC_REGS *) (BCM2835
 // Remember which interrupts have been enabled:
 static unsigned long enabled[3];
 
-/**
- *	Enables all IRQ's in the CPU's CPSR register.
- **/
-static void irqEnable() {
-	__asm volatile("cpsie i" : : : "memory");
-}
-
-static void irqDisable() {
-	__asm volatile("cpsid i" : : : "memory");
-}
-
 static void handleRange (unsigned long pending, const unsigned int base)
 {
 	while (pending)
@@ -79,21 +68,27 @@ void irqHandler (void)
 		handleRange(ulMaskedStatus & 0xFF & enabled[2], 64);
 }
 
-int RegisterInterrupt (const unsigned int irq, FN_INTERRUPT_HANDLER pfnHandler, void *pParam)
+void EnableInterrupts (void)
 {
-	if (irq >= BCM2835_INTC_TOTAL_IRQ)
-		return -1;
-
-	irqDisable();
-	{
-		g_VectorTable[irq].pfnHandler = pfnHandler;
-		g_VectorTable[irq].pParam     = pParam;
-	}
-	irqEnable();
-	return 0;
+	asm volatile ("cpsie i" ::: "memory");
 }
 
-int EnableInterrupt (const unsigned int irq)
+void DisableInterrupts (void)
+{
+	asm volatile ("cpsid i" ::: "memory");
+}
+
+void RegisterInterrupt (const unsigned int irq, FN_INTERRUPT_HANDLER pfnHandler, void *pParam)
+{
+	if (irq < BCM2835_INTC_TOTAL_IRQ) {
+		DisableInterrupts();
+		g_VectorTable[irq].pfnHandler = pfnHandler;
+		g_VectorTable[irq].pParam     = pParam;
+		EnableInterrupts();
+	}
+}
+
+void EnableInterrupt (const unsigned int irq)
 {
 	unsigned long mask = 1UL << (irq % 32);
 
@@ -109,14 +104,9 @@ int EnableInterrupt (const unsigned int irq)
 		pRegs->EnableBasic = mask;
 		enabled[2] |= mask;
 	}
-	else {
-		return -1;
-	}
-
-	return 0;
 }
 
-int DisableInterrupt (const unsigned int irq)
+void DisableInterrupt (const unsigned int irq)
 {
 	unsigned long mask = 1UL << (irq % 32);
 
@@ -132,19 +122,4 @@ int DisableInterrupt (const unsigned int irq)
 		pRegs->DisableBasic = mask;
 		enabled[2] &= ~mask;
 	}
-	else {
-		return -1;
-	}
-
-	return 0;
-}
-
-int EnableInterrupts() {
-	irqEnable();
-	return 0;
-}
-
-int DisableInterrupts() {
-	irqDisable();
-	return 0;
 }

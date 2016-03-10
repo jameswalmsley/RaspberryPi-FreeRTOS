@@ -15,10 +15,10 @@ typedef struct {
 	void 				   *pParam;				///< A special parameter that the use can pass to the IRQ.
 } INTERRUPT_VECTOR;
 
-int RegisterInterrupt		(const unsigned int irq, FN_INTERRUPT_HANDLER pfnHandler, void *pParam);
-int EnableInterrupt			(const unsigned int irq);
-int DisableInterrupt		(const unsigned int irq);
-int EnableInterrupts		(void);
-int DisableInterrupts		(void);
+void RegisterInterrupt		(const unsigned int irq, FN_INTERRUPT_HANDLER pfnHandler, void *pParam);
+void EnableInterrupt		(const unsigned int irq);
+void DisableInterrupt		(const unsigned int irq);
+void EnableInterrupts		(void);
+void DisableInterrupts		(void);
 
 #endif

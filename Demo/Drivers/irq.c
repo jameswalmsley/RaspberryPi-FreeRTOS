@@ -3,7 +3,7 @@
  *	@author	James Walmsley <james@fullfat-fs.co.uk>
  **/
 
-#include "interrupts.h"
+#include "irq.h"
 #include "bcm2835_intc.h"
 
 static INTERRUPT_VECTOR g_VectorTable[BCM2835_INTC_TOTAL_IRQ];
@@ -68,27 +68,27 @@ void irqHandler (void)
 		handleRange(ulMaskedStatus & 0xFF & enabled[2], 64);
 }
 
-void EnableInterrupts (void)
+void irqUnblock (void)
 {
 	asm volatile ("cpsie i" ::: "memory");
 }
 
-void DisableInterrupts (void)
+void irqBlock (void)
 {
 	asm volatile ("cpsid i" ::: "memory");
 }
 
-void RegisterInterrupt (const unsigned int irq, FN_INTERRUPT_HANDLER pfnHandler, void *pParam)
+void irqRegister (const unsigned int irq, FN_INTERRUPT_HANDLER pfnHandler, void *pParam)
 {
 	if (irq < BCM2835_INTC_TOTAL_IRQ) {
-		DisableInterrupts();
+		irqBlock();
 		g_VectorTable[irq].pfnHandler = pfnHandler;
 		g_VectorTable[irq].pParam     = pParam;
-		EnableInterrupts();
+		irqUnblock();
 	}
 }
 
-void EnableInterrupt (const unsigned int irq)
+void irqEnable (const unsigned int irq)
 {
 	unsigned long mask = 1UL << (irq % 32);
 
@@ -106,7 +106,7 @@ void EnableInterrupt (const unsigned int irq)
 	}
 }
 
-void DisableInterrupt (const unsigned int irq)
+void irqDisable (const unsigned int irq)
 {
 	unsigned long mask = 1UL << (irq % 32);
 

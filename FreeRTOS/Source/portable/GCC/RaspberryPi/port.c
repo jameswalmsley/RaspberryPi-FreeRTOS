@@ -4,7 +4,7 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
-#include <Drivers/interrupts.h>
+#include <Drivers/irq.h>
 
 /* Constants required to setup the task context. */
 #define portINITIAL_SPSR						( ( portSTACK_TYPE ) 0x1f ) /* System mode, ARM mode, interrupts enabled. */
@@ -183,7 +183,7 @@ static void prvSetupTimerInterrupt( void )
 	}
 	#endif
 
-	DisableInterrupts();
+	irqBlock();
 
 	pRegs->CTL = 0x003E0000;
 	pRegs->LOD = 1000 - 1;
@@ -192,11 +192,11 @@ static void prvSetupTimerInterrupt( void )
 	pRegs->CLI = 0;
 	pRegs->CTL = 0x003E00A2;
 
-	RegisterInterrupt(64, vTickISR, NULL);
+	irqRegister(64, vTickISR, NULL);
 
-	EnableInterrupt(64);
+	irqEnable(64);
 
-	EnableInterrupts();
+	irqUnblock();
 }
 /*-----------------------------------------------------------*/
 

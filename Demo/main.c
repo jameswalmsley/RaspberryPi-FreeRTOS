@@ -1,7 +1,7 @@
 #include <FreeRTOS.h>
 #include <task.h>
 
-#include "Drivers/interrupts.h"
+#include "Drivers/irq.h"
 #include "Drivers/gpio.h"
 
 void task1(void *pParam) {

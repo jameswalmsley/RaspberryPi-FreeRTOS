@@ -3,7 +3,7 @@
 .extern __bss_end
 .extern vFreeRTOS_ISR
 .extern vPortYieldProcessor
-.extern DisableInterrupts
+.extern irqBlock
 .extern main
 	.section .init
 	.globl _start
@@ -75,7 +75,7 @@ zero_loop:
 	strlt	r2,[r0], #4
 	blt		zero_loop
 
-	bl 		DisableInterrupts
+	bl 		irqBlock
 	
 	
 	;@ 	mov	sp,#0x1000000

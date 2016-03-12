@@ -15,7 +15,7 @@ OBJECTS += $(BUILD_DIR)FreeRTOS/Source/tasks.o
 #
 #	Interrupt Manager & GPIO Drivers
 #
-OBJECTS += $(BUILD_DIR)Demo/Drivers/interrupts.o
+OBJECTS += $(BUILD_DIR)Demo/Drivers/irq.o
 OBJECTS += $(BUILD_DIR)Demo/Drivers/gpio.o
 
 $(BUILD_DIR)FreeRTOS/Source/portable/GCC/RaspberryPi/port.o: CFLAGS += -I $(BASE)Demo/
